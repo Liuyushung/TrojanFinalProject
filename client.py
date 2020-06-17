@@ -6,11 +6,12 @@ Created on Wed Jun 17 19:56:16 2020
 @author: 劉又聖
 """
 
-import socket, sys, os, logging
+import socket, sys, os, logging, platform
 from networkAPI import NetAPI
+from config import *
 
 #TODO 寫個check file routine
-def scan_dir_and_cktime(dir_path, previous_file=None):
+def scan_dir_and_cktime(dir_path):
     def scan_dir(dir_path):
         if 'update_dict' not in dir(scan_dir):
             scan_dir.update_dict = {}
@@ -29,20 +30,22 @@ def scan_dir_and_cktime(dir_path, previous_file=None):
     """ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ """
     ###################
     # Error Detection #
-    if not os.path.exists(previous_file):
-        raise FileNotFoundError(f'{previous_file} is not found.')
     ###################
     import json
     
-    if os.path.exists('previous.json'):
-        previous_file = 'previous.json'
+    first_flag = False
+    previous_file = 'previous.json'
+    if not os.path.exists(previous_file):
+        first_flag = True
     
     file_status = scan_dir(dir_path)
     update_list = {}
-    if not previous_file:
-        # 第一次掃描目錄，需要建立 previous status file    
+    if first_flag:
+        # 第一次掃描目錄，需要建立 previous status file
         logging.debug('First, create previous status file.')
+        update_list = file_status.copy()
     else:
+        # 非第一次，讀取之前的資料
         pre_file_status = json.load(open(previous_file, 'r'))
         
         for fn, st in file_status.items():
@@ -53,10 +56,9 @@ def scan_dir_and_cktime(dir_path, previous_file=None):
                 if pre_file_status[fn] != file_status[fn]:
                     logging.debug('File has been modify.')
                     update_list[fn] = st  # 檔案資料有變動
-                else:
-                    pass  # 檔案沒有變動
+
     # Save file status
-    json.dump(file_status, open('previous.json', 'w'), indent=2)
+    json.dump(file_status, open(previous_file, 'w'))
     return update_list
 
 def send_dir(handle, dir_paths):
@@ -64,13 +66,22 @@ def send_dir(handle, dir_paths):
         for dir_path in dir_paths:
             for file in scan_dir_and_cktime(dir_path).keys():
                 handle.send_file(file)
+    elif isinstance(dir_paths, str):
+        pass
+        
 
 def client(host, port):
+    start_dirs = upload_dirs.get(platform.system(), [])
+    logging.debug('Upload dirs {}'.format(start_dirs))
+    
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.connect( (host, port) )
 
     handle = NetAPI(sock)
-    handle.send_file('server.py')
+    #handle.send_file('server.py')
+    
+    #TODO: Daily check dir & send them
+    send_dir(handle, start_dirs)
 
     sock.close()
     
