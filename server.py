@@ -23,7 +23,6 @@ def server(host, port):
             data = handle.recv_file()   # It will receive a dict
             if not data:
                 break
-            print('receive  from {}\n{}'.format(sockname, data))
             save_file(data, os.path.join(NetAPI.savePath, str(sockname[0])))
         sock.close()
 

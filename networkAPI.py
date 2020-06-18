@@ -56,7 +56,7 @@ def save_file(file_info, dirctory):
         if file_content:  # 小檔案
             assert file_size == len(file_content), 'File size mismatch.'
             with open(full_name, 'wb') as fd:
-                logging.warning('Overwriting existing file')
+                logging.warning('Overwriting existing file {}'.format(file_name))
                 fd.write(file_content)
         else:  # 以 Block 傳送，改暫存檔名
             assert os.path.getsize(tmp_file_name) == file_size, 'File size mismatch.'
@@ -88,49 +88,49 @@ class NetAPI:
         self.blockSize  = 4096                       # block size
 
     def send_tag(self, tag):
-        logging.debug('Send tag')
+        #logging.debug('Send tag')
         self.oHandle.write_raw(tag)
         
     def recv_tag(self):
-        logging.debug('Recv tag')
+        #logging.debug('Recv tag')
         return self.iHandle.read_raw(self.FILE_TAG_SIZE)
 
     def send_data(self, data):
-        logging.debug('Send data')
+        #logging.debug('Send data')
         self.oHandle.write(data)
         
     def recv_data(self):
-        logging.debug('Recv data')
+        #logging.debug('Recv data')
         return self.iHandle.read()
 
     def send_size(self, n):
-        logging.debug('Send size')
+        #logging.debug('Send size')
         return self.send_data(n)
     
     def recv_size(self):
-        logging.debug('Recv size')
+        #logging.debug('Recv size')
         size = self.recv_data()
         if not isinstance(size, int):   # if type is not int
             raise TypeError('Invalid size type %s' % type(size))
         return size
 
     def send_name(self, s):
-        logging.debug('Send name')
+        #logging.debug('Send name')
         return self.send_data(s)
     
     def recv_name(self):
-        logging.debug('Recv name')
+        #logging.debug('Recv name')
         path = self.recv_data()
         if not isinstance(path, str):   # if type is not str
             raise TypeError('Invalid size type %s' % type(path))
         return path
 
     def send_content(self, d):
-        logging.debug('Send content')
+        #logging.debug('Send content')
         return self.send_data(d)
     
     def recv_content(self):
-        logging.deubg('Recv content')
+        #logging.deubg('Recv content')
         return self.recv_data()
 
     def send_file(self, path):
@@ -181,7 +181,7 @@ class NetAPI:
         return result
 
     def send_block(self, path):
-        logging.debug('Send block')
+        #logging.debug('Send block')
         block_ID = 0
         total_size = 0
         
@@ -198,7 +198,7 @@ class NetAPI:
         return total_size  # 回傳送出區塊的大小
     
     def recv_block(self):
-        logging.debug('Recv block')
+        #logging.debug('Recv block')
         import time
         
         total_size = 0
