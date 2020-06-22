@@ -7,9 +7,12 @@ Created on Wed Jun 17 19:55:13 2020
 """
 
 import socket, platform, sys, os
+import logging
 
 from networkAPI import NetAPI, save_file
-from config import server_save_dir
+from config import server_save_dir, set_logging
+
+set_logging()
 
 def server(host, port):
     listeningSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -18,8 +21,10 @@ def server(host, port):
     print("Listening at", listeningSock.getsockname())
 
     while True:
+        logging.debug('Wait somebody...')
         sock, sockname = listeningSock.accept()
         handle = NetAPI(sock)
+        logging.debug('Conn with {}'.format(sockname))
         while True:
             data = handle.recv_file()   # It will receive a dict
             if not data:

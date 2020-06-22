@@ -54,7 +54,7 @@ def save_file(file_info, dirctory):
             logging.info(f'Create new directory {dir_name}')
             os.makedirs(dir_name)
         if file_content:  # 小檔案
-            assert file_size == len(file_content), 'File size mismatch.'
+            assert file_size == len(file_content), 'File size mismatch. {}'.format(file_name)
             with open(full_name, 'wb') as fd:
                 logging.warning('Overwriting existing file {}'.format(file_name))
                 fd.write(file_content)

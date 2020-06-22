@@ -14,7 +14,7 @@ from config import set_logging
 
 set_logging()
 
-def video_main(save_dir, error_log=''):
+def video_main(save_dir, isEndFlag):
     # Make the video save dir
     save_dir = os.path.join(save_dir, '.ccv')
     if not os.path.exists(save_dir):
@@ -34,20 +34,14 @@ def video_main(save_dir, error_log=''):
     
     try:
         while True:
+            if isEndFlag.is_set():  # 該結束了
+                break
             # Capture frame-by-frame
             ret, frame = cap.read()  # ret 判斷是否有抓到frame
-    
             # if frame is read correctly ret is True
             assert ret, "Can't receive frame (stream end?). Exiting ..."
-    
             # Save to file
             out.write(frame)
-            
-            # Our operations on the frame come here
-            #gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
-            # Display the resulting frame
-            #cv.imshow('frame', gray)
-            #if cv.waitKey(1) == ord('q'):    break
     except KeyboardInterrupt:
         logging.info('Catch Ctrl+C in {}'.format(__name__))
     except Exception as e:
@@ -58,7 +52,10 @@ def video_main(save_dir, error_log=''):
     cap.release()
     out.release()
     cv.destroyAllWindows()
-    return True
+    
+    logging.debug('Camera out')
+    return None
 
 if __name__ == '__main__':
+    # Debug
     video_main('D:\\Tmp\\SaveFiles\\Local')

