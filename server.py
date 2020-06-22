@@ -6,9 +6,10 @@ Created on Wed Jun 17 19:55:13 2020
 @author: 劉又聖
 """
 
-import socket, sys, os
+import socket, platform, sys, os
 
 from networkAPI import NetAPI, save_file
+from config import server_save_dir
 
 def server(host, port):
     listeningSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -23,7 +24,8 @@ def server(host, port):
             data = handle.recv_file()   # It will receive a dict
             if not data:
                 break
-            save_file(data, os.path.join(NetAPI.savePath, str(sockname[0])))
+            save_file(data, os.path.join(server_save_dir.get(platform.system()),
+                                         str(sockname[0])))
         sock.close()
 
     listeningSock.close()

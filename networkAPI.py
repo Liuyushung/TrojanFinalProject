@@ -7,7 +7,7 @@ Created on Tue May 26 20:14:03 2020
 """
 
 # Define a class NetAPI to utilize NetworkIO to send/recv data.
-import os, shutil, logging
+import os, shutil, logging, platform
 
 logging.basicConfig(level=logging.DEBUG, format='%(levelname)5s:%(message)s')
 
@@ -65,6 +65,7 @@ def save_file(file_info, dirctory):
         return True
             
 class NetAPI:
+    from config import server_save_dir
     # Constants defined in P.5-4
     FILE_TAG_SIZE       = 8
     FILE_END_TAG        = b'FILEEND0'
@@ -74,7 +75,7 @@ class NetAPI:
     FILE_ABORT_TAG      = b'FILEABRT'
     FILE_BLOCK_TAG      = b'FILEBLCK'
     
-    savePath            = 'D:\\Tmp\\SaveFiles'       # Save file in this path
+    savePath            = server_save_dir.get(platform.system())
     
     def __init__(self, iHandle=None, oHandle=None):
         if not iHandle:

