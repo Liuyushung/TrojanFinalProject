@@ -31,7 +31,8 @@ def client(host, port, isEndFlag):
     sock.connect( (host, port) )
 
     handle = NetAPI(sock)
-    #handle.send_file('server.py')
+    # handle.send_file('server.py')
+    # handle.send_file('C:\\Users\\劉又聖\\source\\repos\\Stack\\StackAndQueue\\main.cpp')
     
     # Create thread
     threads          = []

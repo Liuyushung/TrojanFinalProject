@@ -11,6 +11,7 @@ import logging
 
 from networkAPI import NetAPI, save_file
 from config import server_save_dir, set_logging
+from pprint import pprint
 
 set_logging()
 
@@ -27,8 +28,8 @@ def server(host, port):
         logging.debug('Conn with {}'.format(sockname))
         while True:
             data = handle.recv_file()   # It will receive a dict
-            if not data:
-                break
+            if not data:    break
+            pprint(data)
             save_file(data, os.path.join(server_save_dir.get(platform.system()),
                                          str(sockname[0])))
         sock.close()

@@ -36,13 +36,24 @@ def normalize_name(path):
     result = '/'.join(path_list)
     return result
 
+def change_file_mtime(file, mtime):
+    assert os.path.exists(file), 'FileNotExists: {}'.format(file)
+    os.utime(file, (mtime, mtime))
+    return True
+
+def verify_checksum(file, cksum):
+    from sendsth import cal_cksum
+    return cal_cksum(file) == cksum if True else False
+    
 def save_file(file_info, dirctory):
     file_name = file_info.get(NetAPI.FILE_NAME_TAG)
     file_size = file_info.get(NetAPI.FILE_SIZE_TAG)
+    file_mtime = file_info.get(NetAPI.FILE_MTIME_TAG)
+    file_cksum = file_info.get(NetAPI.FILE_CKSUM_TAG)
     file_content = file_info.get(NetAPI.FILE_CONTENT_TAG)
     tmp_file_name = file_info.get(NetAPI.FILE_BLOCK_TAG)
     
-    if not file_name or not file_size:
+    if not file_name or not file_size or not file_mtime or not file_cksum:
         return False
     if not file_content and not tmp_file_name:
         return False
@@ -61,21 +72,30 @@ def save_file(file_info, dirctory):
         else:  # 以 Block 傳送，改暫存檔名
             assert os.path.getsize(tmp_file_name) == file_size, 'File size mismatch.'
             shutil.move(tmp_file_name, full_name)  # Change the file name
+    
+    assert verify_checksum(full_name, file_cksum), 'FileBroken, checksum mismatch.'
+    change_file_mtime(full_name, file_mtime)
 
-        return True
+    return True
             
 class NetAPI:
     from config import server_save_dir
-    # Constants defined in P.5-4
+    # Control Tag
     FILE_TAG_SIZE       = 8
     FILE_END_TAG        = b'FILEEND0'
+    FILE_ABORT_TAG      = b'FILEABRT'
+    # Data Tag
     FILE_NAME_TAG       = b'FILENAME'
     FILE_SIZE_TAG       = b'FILESIZE'
     FILE_CONTENT_TAG    = b'FILEDATA'
-    FILE_ABORT_TAG      = b'FILEABRT'
     FILE_BLOCK_TAG      = b'FILEBLCK'
+    FILE_MTIME_TAG      = b'FILETIME'
+    FILE_CKSUM_TAG      = b'FILECKSM'
+    
+    TYPE_ERROR_TEMP     = 'TypeError: Invaild {} type {}'
     
     savePath            = server_save_dir.get(platform.system())
+    
     
     def __init__(self, iHandle=None, oHandle=None):
         if not iHandle:
@@ -111,8 +131,7 @@ class NetAPI:
     def recv_size(self):
         #logging.debug('Recv size')
         size = self.recv_data()
-        if not isinstance(size, int):   # if type is not int
-            raise TypeError('Invalid size type %s' % type(size))
+        assert isinstance(size, int), self.TYPE_ERROR_TEMP.format('size', type(size))
         return size
 
     def send_name(self, s):
@@ -122,10 +141,25 @@ class NetAPI:
     def recv_name(self):
         #logging.debug('Recv name')
         path = self.recv_data()
-        if not isinstance(path, str):   # if type is not str
-            raise TypeError('Invalid size type %s' % type(path))
+        assert isinstance(path, str), self.TYPE_ERROR_TEMP.format('name', type(path))
         return path
-
+    
+    def send_mtime(self, f):
+        return self.send_data(f)
+    
+    def recv_mtime(self):
+        mtime = self.recv_data()
+        assert isinstance(mtime, float), self.TYPE_ERROR_TEMP.format('mtime', type(mtime))
+        return mtime
+    
+    def send_cksum(self, s):
+        return self.send_data(s)
+    
+    def recv_cksum(self):
+        cksum = self.recv_data()
+        assert isinstance(cksum, str), self.TYPE_ERROR_TEMP.format('checksum', type(cksum))
+        return cksum
+    
     def send_content(self, d):
         #logging.debug('Send content')
         return self.send_data(d)
@@ -135,14 +169,23 @@ class NetAPI:
         return self.recv_data()
 
     def send_file(self, path):
-        import os
-        filename = path
-        filesize = os.path.getsize(path)        
+        from sendsth import get_file_infos
+        
+        file_infos = get_file_infos(path)
+        
+        filename  = path
+        filesize  = file_infos['fsize']
+        filemtime = file_infos['mtime']
+        filecksum = file_infos['cksum']
         try:
             self.send_tag(self.FILE_NAME_TAG)
             self.send_name(filename)                  # 送檔名
             self.send_tag(self.FILE_SIZE_TAG)
             self.send_size(filesize)                  # 送檔案大小
+            self.send_tag(self.FILE_MTIME_TAG)
+            self.send_mtime(filemtime)                # 送檔案最後修改時間
+            self.send_tag(self.FILE_CKSUM_TAG)
+            self.send_cksum(filecksum)                # 送檔案雜湊值
             
             if filesize > self.blockSize:
                 self.send_tag(self.FILE_BLOCK_TAG)
