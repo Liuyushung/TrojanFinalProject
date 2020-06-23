@@ -8,24 +8,34 @@ Created on Mon Jun 22 15:03:09 2020
 
 import os, logging
 
+def cal_cksum(fname):
+    ''' Calculate the checksume of file with sha256 '''
+    from hashlib import sha256
+    
+    s = sha256()
+    with open(fname, 'rb') as fd:
+        for chunk in iter(lambda : fd.read(1024), b''):
+            s.update(chunk)
+    return s.hexdigest()
+
+def scan_dir(dir_path):
+    if 'update_dict' not in dir(scan_dir):
+        scan_dir.update_dict = {}
+        
+    """ Scan the directory recursively """
+    if os.path.exists(dir_path):
+        if os.path.isdir(dir_path):
+            for filename in os.listdir(dir_path):
+                fullpath = os.path.join(dir_path, filename)
+                scan_dir(fullpath)
+        else:
+            # Here dir_path is full path file name
+            scan_dir.update_dict[dir_path] = [ os.path.getsize(dir_path),
+                                               os.path.getmtime(dir_path) ]
+    return scan_dir.update_dict
+
 #TODO 寫個check file routine
 def scan_dir_and_cktime(dir_path, local_save_dir):
-    def scan_dir(dir_path):
-        if 'update_dict' not in dir(scan_dir):
-            scan_dir.update_dict = {}
-            
-        """ Scan the directory recursively """
-        if os.path.exists(dir_path):
-            if os.path.isdir(dir_path):
-                for filename in os.listdir(dir_path):
-                    fullpath = os.path.join(dir_path, filename)
-                    scan_dir(fullpath)
-            else:
-                # Here dir_path is full path file name
-                scan_dir.update_dict[dir_path] = [ os.path.getsize(dir_path),
-                                                   os.path.getmtime(dir_path) ]
-            
-        return scan_dir.update_dict
     """ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ """
     ###################
     # Error Detection #
@@ -86,3 +96,11 @@ def send_dir(handle, dir_paths, locat_save_dir, isEndFlag):
     
     logging.debug('Send dir out')
     return None
+
+if __name__ == '__main__':
+    # Debug
+    from glob import glob
+    
+    for name in glob('*'):
+        if os.path.isfile(name):
+            print(name, cal_cksum(name), sep=': ')
