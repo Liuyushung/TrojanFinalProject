@@ -6,7 +6,7 @@ Created on Mon Jun 22 15:03:09 2020
 @author: 劉又聖
 """
 
-import os, logging
+import os, logging, json
 
 def cal_cksum(fname):
     ''' Calculate the checksume of file with sha256 '''
@@ -18,84 +18,125 @@ def cal_cksum(fname):
             s.update(chunk)
     return s.hexdigest()
 
-def scan_dir(dir_path):
-    if 'update_dict' not in dir(scan_dir):
-        scan_dir.update_dict = {}
-        
-    """ Scan the directory recursively """
-    if os.path.exists(dir_path):
-        if os.path.isdir(dir_path):
-            for filename in os.listdir(dir_path):
-                fullpath = os.path.join(dir_path, filename)
-                scan_dir(fullpath)
-        else:
-            # Here dir_path is full path file name
-            scan_dir.update_dict[dir_path] = [ os.path.getsize(dir_path),
-                                               os.path.getmtime(dir_path) ]
-    return scan_dir.update_dict
+def get_pre_infos(fname):
+    if not os.path.exists(fname):
+        return {}
+    else:
+        with open(fname, 'r') as fd:
+            return json.load(fd)
 
-#TODO 寫個check file routine
-def scan_dir_and_cktime(dir_path, local_save_dir):
-    """ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ """
-    ###################
-    # Error Detection #
-    ###################
-    import json
+def get_file_infos(fname):
+    '''
+    Parameters
+    ----------
+    fname : TYPE string
+        the fullpath of file.
+
+    Returns
+    -------
+    dict
+        'fsize' : file size,
+        'mtime' : the last modify time,
+        'cksum' : file checksum,
+    '''
+    assert os.path.exists(fname), '{} is not exist.'.format(fname)
     
-    previous_file = os.path.join(local_save_dir, 'previous.json')
-    first_flag = False
+    fsize = os.path.getsize(fname)
+    mtime = os.path.getmtime(fname)
+    cksum = cal_cksum(fname)
+    
+    return {'fsize' : fsize, 'mtime' : mtime, 'cksum' : cksum}
+
+def scan_dir(path):
+    '''
+    Parameters
+    ----------
+    path : TYPE string
+        the directory path
+
+    Yields
+    ------
+    TYPE string
+        the fullpath of file
+    '''
+    if os.path.exists(path):
+        if os.path.isdir(path):
+            # This path is directory
+            for filename in os.listdir(path):
+                fullpath = os.path.join(path, filename)
+                yield from scan_dir(fullpath)
+        else:
+            # This path is file
+            yield path
+    
+#TODO 寫個check file routine
+def scan_dir_and_ckchanged(dir_path):
+    from config import client_save_dirs
+    import platform
+    
+    # Generate the local folder storing the tmp file
+    local_save_dir = client_save_dirs.get(platform.system())
     if not os.path.exists(local_save_dir):
         os.makedirs(local_save_dir)
-    if not os.path.exists(previous_file):
-        first_flag = True
+    # Generate previous file & Get previous file infos
+    previous_fname = os.path.join(local_save_dir, 'previous.json')
+    previous_status = get_pre_infos(previous_fname)
     
-    file_status = scan_dir(dir_path)
+    if not previous_status:
+        first_flag = True   # 沒有資料，為第一次讀取
+    else:
+        first_flag = False  # 有資料
+        
+    # 開始檢查目錄下的所有檔案
     update_list = {}
-    if first_flag:
-        # 第一次掃描目錄，需要建立 previous status file
-        logging.debug('First, create previous status file.')
-        update_list = file_status.copy()
-    else:
-        # 非第一次，讀取之前的資料
-        pre_file_status = json.load(open(previous_file, 'r'))
-        
-        for fn, st in file_status.items():
-            if not pre_file_status.get(fn):
-                logging.debug('Come up an new file: {}'.format(fn))
-                update_list[fn] = st  # 出現新檔案
-            else:
-                if pre_file_status[fn] != file_status[fn]:
-                    logging.debug('File has been modify: {}'.format(fn))
-                    update_list[fn] = st  # 檔案資料有變動
-
-    # Save file status
-    if first_flag:
-        logging.debug('First save JSON file.')
-        json.dump(file_status, open(previous_file, 'w'))
-    else:
-        for update_fn in update_list.keys():
-            # Update the previous file status
-            pre_file_status[update_fn] = update_list[update_fn]
-        json.dump(pre_file_status, open(previous_file, 'w'))
-        
+    for file in scan_dir(dir_path):
+        file_infos = get_file_infos(file)
+        # Check that file if had been changed.
+        if previous_status.get(file) != file_infos:
+            update_list[file] = file_infos
+            previous_status[file] = file_infos
+    
+    # Save file infos into previous.json
+    with open(previous_fname, 'w') as fd:
+        if first_flag:
+            json.dump(update_list, fd)
+        else:
+            json.dump(previous_status, fd)
+    
     return update_list
+        
+def send_dir(handle, dir_paths, isEndFlag):
+    '''
+    This is API for sending directory.
 
-def send_dir(handle, dir_paths, locat_save_dir, isEndFlag):
+    Parameters
+    ----------
+    handle : TYPE NetworkAPI
+        Deal the send file
+    dir_paths : list or tuple
+        contain the upload directory.
+    isEndFlag : TYPE Threading.Event
+        Detect the program if is end.
+
+    Returns
+    -------
+    None.
+    '''
     if isinstance(dir_paths, (list, tuple)):
         for dir_path in dir_paths:
-            for file in scan_dir_and_cktime(dir_path, locat_save_dir).keys():
+            for file in scan_dir_and_ckchanged(dir_path).keys():
                 handle.send_file(file)
     elif isinstance(dir_paths, str):
         pass
     
-    isEndFlag.wait()  # 做最後一次傳送
-    if isinstance(dir_paths, (list, tuple)):
-        for dir_path in dir_paths:
-            for file in scan_dir_and_cktime(dir_path, locat_save_dir).keys():
-                handle.send_file(file)
-    
-    logging.debug('Send dir out')
+    if not isEndFlag:
+        isEndFlag.wait()  # 等待做最後一次傳送
+        send_dir(handle, dir_paths, True)
+        logging.debug('Send dir out')
+        
     return None
+
+#TODO check the delete file
 
 if __name__ == '__main__':
     # Debug

