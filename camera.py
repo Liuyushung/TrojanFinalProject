@@ -10,9 +10,6 @@ import time
 import logging
 import cv2 as cv
 from glob import glob
-from config import set_logging
-
-set_logging()
 
 def video_main(save_dir, isEndFlag):
     # Make the video save dir
@@ -23,8 +20,7 @@ def video_main(save_dir, isEndFlag):
     # Set the file name
     num = len(glob(os.path.join(save_dir, 'C' + time.strftime('%Y%m%d') + '*' )))
     fn  = 'C' + time.strftime('%Y%m%d') + str(num) + '.avi'
-    fullname = os.path.join(save_dir, fn)
-    logging.debug('Save file name is {}'.format(fullname))    
+    fullname = os.path.join(save_dir, fn) 
     # Catch the camera
     cap = cv.VideoCapture(0)
     assert cap.isOpened(), "Cannot open camera"
@@ -45,7 +41,7 @@ def video_main(save_dir, isEndFlag):
     except KeyboardInterrupt:
         logging.info('Catch Ctrl+C in {}'.format(__name__))
     except Exception as e:
-        logging.error(e.args)
+        logging.error('Unknown Error: {}'.format(e.args))
         pass
     
     # When everything done, release the resource

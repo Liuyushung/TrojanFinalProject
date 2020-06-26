@@ -7,38 +7,7 @@ Created on Tue Apr 21 18:53:33 2020
 """
 
 # Encapsulate nbyte_to_data(),data_to_nbyte to a class NetworkIO
-import socket, struct, sys
-
-def server(host, port):
-    typename = { int:'int', str:'str', bytes:'bytes', float:'float' }  # dict
-    listeningSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    listeningSock.bind( (host, port) )
-    listeningSock.listen()
-
-    while True:
-        sock, sockname = listeningSock.accept()
-        handle = NetworkIO(sock)
-        while True:
-            data = handle.read()
-            if not data:
-                break
-            print('receive', typename[type(data)], \
-                repr(data), 'from', sockname)
-        sock.close()
-
-    listeningSock.close()
-
-def client(host, port):
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.connect( (host, port) )
-
-    handle = NetworkIO(sock)
-    handle.write( b'NCNU') 
-    handle.write( 'Happy Birthday') 
-    handle.write( 5201314) 
-    handle.write( 3.1415926535) 
-
-    sock.close()
+import struct
 
 class NetworkIO:
     def __init__(self, sock):
@@ -104,20 +73,3 @@ class NetworkIO:
         self.write_raw(byte_data)
     def close_handle(self):
         return self.handle
-
-def main():
-    msg = "Usage: %s {server|client} host port" % sys.argv[0]
-    if len(sys.argv) != 4:
-        print(msg)
-    else:
-        host = sys.argv[2]
-        port = int(sys.argv[3])
-        if sys.argv[1] == "server":
-            server(host, port)
-        elif sys.argv[1] == "client":
-            client(host, port)
-        else:
-            print(msg)
-
-if __name__ == "__main__":
-    main()

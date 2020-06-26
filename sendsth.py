@@ -122,18 +122,24 @@ def send_dir(handle, dir_paths, isEndFlag):
     -------
     None.
     '''
-    if isinstance(dir_paths, (list, tuple)):
-        for dir_path in dir_paths:
-            for file in scan_dir_and_ckchanged(dir_path).keys():
-                handle.send_file(file)
-    elif isinstance(dir_paths, str):
+    try:
+        if isinstance(dir_paths, (list, tuple)):
+            for dir_path in dir_paths:
+                for file in scan_dir_and_ckchanged(dir_path).keys():
+                    handle.send_file(file)
+        elif isinstance(dir_paths, str):
+            pass
+    
+        if not isEndFlag.is_set():
+            isEndFlag.wait()  # 等待做最後一次傳送
+            send_dir(handle, dir_paths, isEndFlag)    
+            logging.debug('Send dir out')    
+    except KeyboardInterrupt:
+        logging.debug('catch Ctrl+C in {}'.format(__name__))
+    except Exception as e:
+        logging.error('Unknown Error: {}'.format(e.args))
         pass
     
-    if not isEndFlag:
-        isEndFlag.wait()  # 等待做最後一次傳送
-        send_dir(handle, dir_paths, True)
-        logging.debug('Send dir out')
-        
     return None
 
 #TODO check the delete file
