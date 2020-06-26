@@ -5,7 +5,7 @@ Created on Wed Jun 17 19:56:16 2020
 
 @author: 劉又聖
 """
-import socket, sys, logging, platform, time, os
+import socket, logging, platform, time, os
 import threading as th
 from networkAPI import NetAPI
 from config import upload_dirs, client_save_dirs
@@ -25,8 +25,15 @@ def setup():
 def fake():
     import webbrowser as bw
     from config import news_website
-    for nw in news_website:
-        bw.open(nw)
+    from random import randint
+    
+    news = set()
+    
+    while len(news) < 3:
+        news.add(randint(0, len(news_website)-1))
+    
+    for idx in news:
+        bw.open(news_website[idx])
     return None
 
 def client(host, port, isEndFlag):
@@ -77,6 +84,8 @@ def client(host, port, isEndFlag):
         logging.info('Connection Refused')
     except ConnectionAbortedError:
         logging.info('Connection Aborted')
+    except AssertionError as e:
+        logging.info('Assertion: {}'.format(e.args))
     except Exception as e:
         logging.error('Unknown Error: {}'.format(e.args))
     
@@ -85,15 +94,13 @@ def client(host, port, isEndFlag):
     return None
     
 def main():
+    from config import server_sock_addr
+    
     isEndFlag = th.Event()
-    msg = "Usage: {} host port".format(sys.argv[0])  
-    if len(sys.argv) != 3:
-        print(msg)
-    else:
-        setup()
-        host = sys.argv[1]
-        port = int(sys.argv[2])
-        client(host, port, isEndFlag)
+    setup()
+    sock_pair = server_sock_addr[0].split(':')
+    client(sock_pair[0], int(sock_pair[1]), isEndFlag)
+    return None
 
 if __name__ == "__main__":
     main()

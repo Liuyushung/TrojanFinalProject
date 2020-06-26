@@ -14,9 +14,9 @@ upload_dirs = {
                 'Darwin': ['/etc', '/home', '/root'],
               }
 server_save_dir  = {
-                'Linux': '/tmp',
+                'Linux': '/tmp/TrojanSave',
                 'Windows': 'D:\\Tmp\\SaveFiles',
-                'Darwin': '/tmp',
+                'Darwin': '/tmp/TrojanSave',
               }
 client_save_dirs = {
                 'Linux': '/tmp/.normal',
@@ -33,4 +33,5 @@ news_website = [
     'https://www.eff.org/',
     'https://www.nytimes.com/section/technology',
     'https://xrds.acm.org/news.cfm',
+    'https://thehackernews.com/',
     ]
